@@ -1,13 +1,38 @@
 import { useState } from "react";
 import { useRoute, useLocation } from "wouter";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import ExamInterface from "@/components/ExamInterface";
 import ResultsPage from "@/components/ResultsPage";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useLanguage } from "@/contexts/LanguageContext";
-import roadSignsImage from "@assets/generated_images/Road_signs_collection_b6d31949.png";
-import dashboardImage from "@assets/generated_images/Car_dashboard_controls_diagram_caab3a6f.png";
-import intersectionImage from "@assets/generated_images/Four-way_intersection_diagram_c1ef561c.png";
+import { Skeleton } from "@/components/ui/skeleton";
+import { apiRequest } from "@/lib/queryClient";
+
+interface Question {
+  id: string;
+  categoryId: string;
+  questionFr: string;
+  questionMg: string;
+  imageUrl: string | null;
+  option1Fr: string;
+  option1Mg: string;
+  option2Fr: string;
+  option2Mg: string;
+  option3Fr: string;
+  option3Mg: string;
+  option4Fr: string;
+  option4Mg: string;
+  correctAnswer: number;
+}
+
+interface ExamQuestion {
+  id: string;
+  question: string;
+  imageUrl?: string;
+  options: string[];
+  correctAnswer: number;
+}
 
 export default function Exam() {
   const [, params] = useRoute("/exam/:categoryId");
@@ -16,122 +41,77 @@ export default function Exam() {
   const [examStarted, setExamStarted] = useState(false);
   const [userAnswers, setUserAnswers] = useState<number[]>([]);
   const [showResults, setShowResults] = useState(false);
+  const categoryId = params?.categoryId || "";
 
-  // Mock questions - todo: remove mock functionality
-  const mockQuestions = {
-    roadSigns: [
-      {
-        id: "1",
-        question: language === "fr" 
-          ? "Que signifie un panneau octogonal rouge avec STOP écrit en blanc?"
-          : "Inona no dikan'ny famantarana octogonal mena misy STOP fotsy?",
-        imageUrl: roadSignsImage,
-        options: language === "fr"
-          ? [
-              "Ralentir et céder le passage si nécessaire",
-              "Arrêt obligatoire avant la ligne",
-              "Interdiction de s'arrêter",
-              "Sens interdit",
-            ]
-          : [
-              "Mampihena hafainganam-pandeha sy manome lalana raha ilaina",
-              "Tsy maintsy mijanona alohan'ny tsipika",
-              "Tsy mahazo mijanona",
-              "Tsy mahazo miditra",
-            ],
-        correctAnswer: 1,
-      },
-      {
-        id: "2",
-        question: language === "fr"
-          ? "Que signifie un panneau triangulaire avec un bord rouge?"
-          : "Inona no dikan'ny famantarana telozoro misy sisiny mena?",
-        imageUrl: roadSignsImage,
-        options: language === "fr"
-          ? [
-              "Panneau de danger",
-              "Panneau d'interdiction",
-              "Panneau d'indication",
-              "Panneau de priorité",
-            ]
-          : [
-              "Famantarana loza",
-              "Famantarana fandrarana",
-              "Famantarana fampahalalana",
-              "Famantarana laharam-pahamehana",
-            ],
-        correctAnswer: 0,
-      },
-      {
-        id: "3",
-        question: language === "fr"
-          ? "Quelle est la vitesse maximale autorisée dans une zone scolaire?"
-          : "Inona ny hafainganam-pandeha ambony indrindra ekena ao amin'ny faritra misy sekoly?",
-        options: language === "fr"
-          ? ["20 km/h", "30 km/h", "40 km/h", "50 km/h"]
-          : ["20 km/h", "30 km/h", "40 km/h", "50 km/h"],
-        correctAnswer: 1,
-      },
-    ],
-    traffic: [
-      {
-        id: "1",
-        question: language === "fr"
-          ? "Que devez-vous faire à un feu orange?"
-          : "Inona no tokony hataonao amin'ny jiro volomboasary?",
-        imageUrl: intersectionImage,
-        options: language === "fr"
-          ? [
-              "Accélérer pour passer rapidement",
-              "S'arrêter si c'est sécuritaire",
-              "Continuer normalement",
-              "Klaxonner et continuer",
-            ]
-          : [
-              "Manafaingana mba handalo haingana",
-              "Mijanona raha azo antoka",
-              "Mitohy toy ny mahazatra",
-              "Manisy trompetra ary mitohy",
-            ],
-        correctAnswer: 1,
-      },
-      {
-        id: "2",
-        question: language === "fr"
-          ? "Quelle est la fonction des feux de détresse?"
-          : "Inona ny asan'ny jiro loza?",
-        imageUrl: dashboardImage,
-        options: language === "fr"
-          ? [
-              "Signaler un danger ou une panne",
-              "Éclairer la route la nuit",
-              "Indiquer un changement de direction",
-              "Activer les essuie-glaces",
-            ]
-          : [
-              "Mampahafantatra loza na fahapotehan'ny fiara",
-              "Manazava ny lalana amin'ny alina",
-              "Mampiseho fiovana lalana",
-              "Mandefitra ny mpamafa rano",
-            ],
-        correctAnswer: 0,
-      },
-    ],
-  };
+  const { data: questions, isLoading } = useQuery<Question[]>({
+    queryKey: ["/api/questions/category", categoryId],
+    enabled: !!categoryId,
+  });
 
-  const categoryId = params?.categoryId || "roadSigns";
-  const questions = mockQuestions[categoryId as keyof typeof mockQuestions] || mockQuestions.roadSigns;
+  const saveResultMutation = useMutation({
+    mutationFn: async (data: {
+      categoryId: string;
+      score: number;
+      totalQuestions: number;
+      passed: boolean;
+      answers: string;
+    }) => {
+      return await apiRequest("POST", "/api/exam-results", data);
+    },
+  });
 
-  // Generate 10 questions by repeating if needed
-  const examQuestions = [];
-  for (let i = 0; i < 10; i++) {
-    examQuestions.push({
-      ...questions[i % questions.length],
-      id: `${questions[i % questions.length].id}-${i}`,
-    });
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Skeleton className="h-96 w-full max-w-md" />
+      </div>
+    );
   }
 
-  const handleComplete = (answers: number[]) => {
+  if (!questions || questions.length === 0) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Card className="max-w-md p-8 text-center">
+          <p className="text-muted-foreground">
+            {language === "fr"
+              ? "Aucune question disponible dans cette catégorie."
+              : "Tsy misy fanontaniana ao amin'ity sokajy ity."}
+          </p>
+        </Card>
+      </div>
+    );
+  }
+
+  const transformQuestion = (q: Question): ExamQuestion => ({
+    id: q.id,
+    question: language === "fr" ? q.questionFr : q.questionMg,
+    imageUrl: q.imageUrl || undefined,
+    options: [
+      language === "fr" ? q.option1Fr : q.option1Mg,
+      language === "fr" ? q.option2Fr : q.option2Mg,
+      language === "fr" ? q.option3Fr : q.option3Mg,
+      language === "fr" ? q.option4Fr : q.option4Mg,
+    ],
+    correctAnswer: q.correctAnswer,
+  });
+
+  const examQuestions = questions.slice(0, 10).map(transformQuestion);
+
+  const handleComplete = async (answers: number[]) => {
+    const correctCount = answers.filter(
+      (answer, index) => answer === examQuestions[index].correctAnswer
+    ).length;
+    const score = Math.round((correctCount / examQuestions.length) * 100);
+    const passed = score >= 70;
+
+    await saveResultMutation.mutateAsync({
+      categoryId,
+      score,
+      totalQuestions: examQuestions.length,
+      passed,
+      answers: JSON.stringify(answers),
+    });
+
     setUserAnswers(answers);
     setShowResults(true);
   };
@@ -162,8 +142,8 @@ export default function Exam() {
           </h1>
           <p className="mb-6 text-muted-foreground">
             {language === "fr"
-              ? "L'examen contient 10 questions. Vous avez 10 minutes pour le compléter."
-              : "Ny fanadinana dia misy fanontaniana 10. Manana minitra 10 ianao hamaranana azy."}
+              ? `L'examen contient ${examQuestions.length} questions. Vous avez 10 minutes pour le compléter.`
+              : `Ny fanadinana dia misy fanontaniana ${examQuestions.length}. Manana minitra 10 ianao hamaranana azy.`}
           </p>
           <div className="flex flex-col gap-3">
             <Button size="lg" onClick={() => setExamStarted(true)} data-testid="button-start-exam">

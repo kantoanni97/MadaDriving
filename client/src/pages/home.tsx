@@ -3,61 +3,43 @@ import HeroSection from "@/components/HeroSection";
 import CategoryCard from "@/components/CategoryCard";
 import { CarFront, CircleAlert, ParkingCircle, SignpostBig, ShieldCheck, Navigation } from "lucide-react";
 import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
+import { Skeleton } from "@/components/ui/skeleton";
+
+interface CategoryWithStats {
+  id: string;
+  nameFr: string;
+  nameMg: string;
+  icon: string;
+  lessonCount: number;
+  questionCount: number;
+}
+
+const iconMap: Record<string, any> = {
+  SignpostBig,
+  CircleAlert,
+  ShieldCheck,
+  CarFront,
+  Navigation,
+  ParkingCircle,
+};
 
 export default function Home() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [, setLocation] = useLocation();
 
-  // Mock categories - todo: remove mock functionality
-  const categories = [
-    {
-      id: "roadSigns",
-      icon: SignpostBig,
-      title: t("category.roadSigns"),
-      lessonCount: 12,
-      questionCount: 45,
-    },
-    {
-      id: "traffic",
-      icon: CircleAlert,
-      title: t("category.traffic"),
-      lessonCount: 8,
-      questionCount: 32,
-    },
-    {
-      id: "safety",
-      icon: ShieldCheck,
-      title: t("category.safety"),
-      lessonCount: 10,
-      questionCount: 28,
-    },
-    {
-      id: "vehicle",
-      icon: CarFront,
-      title: t("category.vehicle"),
-      lessonCount: 6,
-      questionCount: 20,
-    },
-    {
-      id: "priority",
-      icon: Navigation,
-      title: t("category.priority"),
-      lessonCount: 7,
-      questionCount: 25,
-    },
-    {
-      id: "parking",
-      icon: ParkingCircle,
-      title: t("category.parking"),
-      lessonCount: 5,
-      questionCount: 18,
-    },
-  ];
+  const { data: categories, isLoading } = useQuery<CategoryWithStats[]>({
+    queryKey: ["/api/categories"],
+  });
 
   return (
     <div>
       <HeroSection
-        onStartLearning={() => setLocation("/category/roadSigns")}
+        onStartLearning={() => {
+          if (categories && categories.length > 0) {
+            setLocation(`/category/${categories[0].id}`);
+          }
+        }}
         onAdminLogin={() => setLocation("/admin")}
       />
 
@@ -66,18 +48,26 @@ export default function Home() {
           {t("home.categories")}
         </h2>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {categories.map((category) => (
-            <CategoryCard
-              key={category.id}
-              icon={category.icon}
-              title={category.title}
-              lessonCount={category.lessonCount}
-              questionCount={category.questionCount}
-              onClick={() => setLocation(`/category/${category.id}`)}
-            />
-          ))}
-        </div>
+        {isLoading ? (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <Skeleton key={i} className="h-40" />
+            ))}
+          </div>
+        ) : (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {categories?.map((category) => (
+              <CategoryCard
+                key={category.id}
+                icon={iconMap[category.icon] || SignpostBig}
+                title={language === "fr" ? category.nameFr : category.nameMg}
+                lessonCount={category.lessonCount}
+                questionCount={category.questionCount}
+                onClick={() => setLocation(`/category/${category.id}`)}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
