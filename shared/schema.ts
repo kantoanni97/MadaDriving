@@ -43,7 +43,7 @@ export const questions = pgTable("questions", {
 
 export const examResults = pgTable("exam_results", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  categoryId: varchar("category_id").notNull().references(() => categories.id, { onDelete: "cascade" }),
+  categoryId: varchar("category_id"),
   score: integer("score").notNull(),
   totalQuestions: integer("total_questions").notNull(),
   passed: boolean("passed").notNull(),

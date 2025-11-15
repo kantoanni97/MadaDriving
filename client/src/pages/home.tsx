@@ -1,10 +1,12 @@
 import { useLanguage } from "@/contexts/LanguageContext";
 import HeroSection from "@/components/HeroSection";
 import CategoryCard from "@/components/CategoryCard";
-import { CarFront, CircleAlert, ParkingCircle, SignpostBig, ShieldCheck, Navigation } from "lucide-react";
+import { CarFront, CircleAlert, ParkingCircle, SignpostBig, ShieldCheck, Navigation, GraduationCap } from "lucide-react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 interface CategoryWithStats {
   id: string;
@@ -42,6 +44,37 @@ export default function Home() {
         }}
         onAdminLogin={() => setLocation("/admin")}
       />
+
+      {/* Section Examen Blanc */}
+      <div className="container mx-auto px-4 py-8">
+        <Card className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-8">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-4">
+              <div className="bg-white/20 p-4 rounded-full">
+                <GraduationCap className="h-12 w-12" />
+              </div>
+              <div>
+                <h3 className="text-2xl font-bold mb-2">
+                  {language === "fr" ? "Examen Blanc" : "Fanadinana Blancs"}
+                </h3>
+                <p className="text-white/90">
+                  {language === "fr"
+                    ? "40 questions aléatoires - Toutes catégories confondues"
+                    : "Fanontaniana 40 kisendrasendra - Sokajy rehetra"}
+                </p>
+              </div>
+            </div>
+            <Button
+              size="lg"
+              variant="secondary"
+              onClick={() => setLocation("/exam-blanc")}
+              className="whitespace-nowrap"
+            >
+              {language === "fr" ? "Commencer l'examen" : "Manomboka ny fanadinana"}
+            </Button>
+          </div>
+        </Card>
+      </div>
 
       <div className="container mx-auto px-4 py-12">
         <h2 className="mb-8 text-3xl font-bold" data-testid="text-categories-title">

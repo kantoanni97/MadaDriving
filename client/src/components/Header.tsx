@@ -1,7 +1,8 @@
-import { Moon, Sun, Globe } from "lucide-react";
+import { Moon, Sun, Globe, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useLocation } from "wouter";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,6 +18,7 @@ interface HeaderProps {
 export default function Header({ mode = "student", onModeChange }: HeaderProps) {
   const { theme, toggleTheme } = useTheme();
   const { language, setLanguage, t } = useLanguage();
+  const [, setLocation] = useLocation();
 
   return (
     <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur">
@@ -28,6 +30,18 @@ export default function Header({ mode = "student", onModeChange }: HeaderProps) 
         </div>
 
         <div className="flex items-center gap-2">
+          {mode === "student" && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setLocation("/dashboard")}
+              data-testid="button-dashboard"
+            >
+              <BarChart3 className="h-4 w-4 mr-2" />
+              {language === "fr" ? "Tableau de bord" : "Tondrozotra"}
+            </Button>
+          )}
+
           {onModeChange && (
             <Button
               variant="outline"

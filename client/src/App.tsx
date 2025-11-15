@@ -11,6 +11,8 @@ import CategoryLessons from "@/pages/category-lessons";
 import Exam from "@/pages/exam";
 import Admin from "@/pages/admin";
 import NotFound from "@/pages/not-found";
+import ExamBlanc from "@/pages/exam-blanc";
+import Dashboard from "@/pages/dashboard";
 
 function Router() {
   return (
@@ -18,6 +20,8 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/category/:categoryId" component={CategoryLessons} />
       <Route path="/exam/:categoryId" component={Exam} />
+      <Route path="/exam-blanc" component={ExamBlanc} />
+      <Route path="/dashboard" component={Dashboard} />
       <Route path="/admin" component={Admin} />
       <Route component={NotFound} />
     </Switch>

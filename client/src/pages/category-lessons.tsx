@@ -84,7 +84,8 @@ export default function CategoryLessons() {
       onNext={handleNext}
       onBack={() => setLocation("/")}
       hasPrevious={currentLessonIndex > 0}
-      hasNext={currentLessonIndex < lessons.length - 1}
+      //hasNext={currentLessonIndex < lessons.length - 1}
+      hasNext={true}
     />
   );
 }

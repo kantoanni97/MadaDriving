@@ -1,8 +1,10 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertCategorySchema, insertLessonSchema, insertQuestionSchema, insertExamResultSchema } from "@shared/schema";
+import { db } from "../db";
+import { insertCategorySchema, questions, examResults, insertLessonSchema, insertQuestionSchema, insertExamResultSchema } from "@shared/schema";
 import { z } from "zod";
+import { sql } from "drizzle-orm";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Categories
@@ -152,6 +154,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+    // Route pour obtenir des questions aléatoires de toutes les catégories
+app.get("/api/questions/random/:count", async (req, res) => {
+  try {
+    const count = parseInt(req.params.count, 10);
+    if (isNaN(count) || count <= 0) {
+      return res.status(400).json({ error: "Invalid count parameter" });
+    }
+    
+    // Récupérer toutes les questions et en sélectionner aléatoirement
+    const allQuestions = await db.select().from(questions);
+    
+    // Mélanger et prendre 'count' questions
+    const shuffled = allQuestions.sort(() => 0.5 - Math.random());
+    const randomQuestions = shuffled.slice(0, Math.min(count, allQuestions.length));
+    
+    res.json(randomQuestions);
+  } catch (error) {
+    console.error("Error fetching random questions:", error);
+    res.status(500).json({ error: "Failed to fetch random questions" });
+  }
+});
+
   // Questions
   app.get("/api/questions/category/:categoryId", async (req, res) => {
     try {
@@ -220,6 +244,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+
+
   // Exam Results
   app.post("/api/exam-results", async (req, res) => {
     try {
@@ -244,6 +270,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to fetch exam results" });
     }
   });
+
+  // Statistiques globales de l'utilisateur
+app.get("/api/exam-results/stats", async (req, res) => {
+  try {
+    const allResults = await db.select().from(examResults);
+    
+    const totalExams = allResults.length;
+    const passedExams = allResults.filter(r => r.passed).length;
+    const averageScore = totalExams > 0 
+      ? Math.round(allResults.reduce((sum, r) => sum + (r.score / r.totalQuestions * 100), 0) / totalExams)
+      : 0;
+    
+    const examsBlancs = allResults.filter(r => r.categoryId === null);
+    const examsByCategory = allResults.filter(r => r.categoryId !== null);
+    
+    res.json({
+      totalExams,
+      passedExams,
+      averageScore,
+      examsBlancsCount: examsBlancs.length,
+      examsByCategoryCount: examsByCategory.length,
+    });
+  } catch (error) {
+    console.error("Error fetching stats:", error);
+    res.status(500).json({ error: "Failed to fetch stats" });
+  }
+});
+
+// Historique complet des examens
+app.get("/api/exam-results/history", async (req, res) => {
+  try {
+    const results = await db
+      .select()
+      .from(examResults)
+      .orderBy(sql`${examResults.createdAt} DESC`);
+    
+    res.json(results);
+  } catch (error) {
+    console.error("Error fetching history:", error);
+    res.status(500).json({ error: "Failed to fetch history" });
+  }
+});
 
   const httpServer = createServer(app);
   return httpServer;
