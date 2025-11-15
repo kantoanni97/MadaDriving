@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
+import { AuthProvider } from "@/contexts/AuthContext";
 import Header from "@/components/Header";
 import Home from "@/pages/home";
 import CategoryLessons from "@/pages/category-lessons";
@@ -12,17 +13,58 @@ import Exam from "@/pages/exam";
 import Admin from "@/pages/admin";
 import NotFound from "@/pages/not-found";
 import ExamBlanc from "@/pages/exam-blanc";
-import Dashboard from "@/pages/dashboard";
+import Auth from "@/pages/auth";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import StudentDashboard from "@/pages/student-dashboard";
+import AdminDashboard from "@/pages/admin-dashboard";
 
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Home} />
-      <Route path="/category/:categoryId" component={CategoryLessons} />
-      <Route path="/exam/:categoryId" component={Exam} />
-      <Route path="/exam-blanc" component={ExamBlanc} />
-      <Route path="/dashboard" component={Dashboard} />
-      <Route path="/admin" component={Admin} />
+      <Route path="/auth" component={Auth} />
+      
+      <Route path="/">
+        <ProtectedRoute>
+          <Home />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/category/:categoryId">
+        <ProtectedRoute>
+          <CategoryLessons />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/exam/:categoryId">
+        <ProtectedRoute>
+          <Exam />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/exam-blanc">
+        <ProtectedRoute>
+          <ExamBlanc />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/dashboard">
+        <ProtectedRoute>
+          <StudentDashboard />
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/admin-dashboard">
+  <ProtectedRoute requireAdmin={true}>
+    <AdminDashboard />
+  </ProtectedRoute>
+</Route>
+      
+      <Route path="/admin">
+        <ProtectedRoute requireAdmin={true}>
+          <Admin />
+        </ProtectedRoute>
+      </Route>
+      
       <Route component={NotFound} />
     </Switch>
   );
@@ -34,11 +76,13 @@ function App() {
       <TooltipProvider>
         <ThemeProvider>
           <LanguageProvider>
+          <AuthProvider> 
             <div className="min-h-screen bg-background">
               <Header />
               <Router />
             </div>
             <Toaster />
+            </AuthProvider> 
           </LanguageProvider>
         </ThemeProvider>
       </TooltipProvider>

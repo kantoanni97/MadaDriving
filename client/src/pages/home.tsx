@@ -37,13 +37,12 @@ export default function Home() {
   return (
     <div>
       <HeroSection
-        onStartLearning={() => {
-          if (categories && categories.length > 0) {
-            setLocation(`/category/${categories[0].id}`);
-          }
-        }}
-        onAdminLogin={() => setLocation("/admin")}
-      />
+  onStartLearning={() => {
+    if (categories && categories.length > 0) {
+      setLocation(`/category/${categories[0].id}`);
+    }
+  }}
+/>
 
       {/* Section Examen Blanc */}
       <div className="container mx-auto px-4 py-8">

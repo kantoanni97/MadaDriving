@@ -1,4 +1,4 @@
-import { Moon, Sun, Globe, BarChart3 } from "lucide-react";
+import { Moon, Sun, Globe, BarChart3, LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -9,6 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface HeaderProps {
   mode?: "student" | "admin";
@@ -19,6 +20,12 @@ export default function Header({ mode = "student", onModeChange }: HeaderProps) 
   const { theme, toggleTheme } = useTheme();
   const { language, setLanguage, t } = useLanguage();
   const [, setLocation] = useLocation();
+  const { user, logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+    setLocation("/auth");
+  };
 
   return (
     <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur">
@@ -30,19 +37,19 @@ export default function Header({ mode = "student", onModeChange }: HeaderProps) 
         </div>
 
         <div className="flex items-center gap-2">
-          {mode === "student" && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setLocation("/dashboard")}
-              data-testid="button-dashboard"
-            >
-              <BarChart3 className="h-4 w-4 mr-2" />
-              {language === "fr" ? "Tableau de bord" : "Tondrozotra"}
-            </Button>
-          )}
+        {user && (
+  <Button
+    variant="outline"
+    size="sm"
+    onClick={() => setLocation(user.role === "admin" ? "/admin-dashboard" : "/dashboard")}
+    data-testid="button-dashboard"
+  >
+    <BarChart3 className="h-4 w-4 mr-2" />
+    {language === "fr" ? "Tableau de bord" : "Tondrozotra"}
+  </Button>
+)}
 
-          {onModeChange && (
+          {user && onModeChange && (
             <Button
               variant="outline"
               size="sm"
@@ -51,6 +58,13 @@ export default function Header({ mode = "student", onModeChange }: HeaderProps) 
             >
               {mode === "student" ? t("header.admin") : t("header.student")}
             </Button>
+          )}
+
+          {user && (
+            <div className="flex items-center gap-2 px-3 py-1 rounded-md bg-muted text-sm">
+              <User className="h-4 w-4" />
+              <span className="hidden sm:inline">{user.name}</span>
+            </div>
           )}
 
           <DropdownMenu>
@@ -85,6 +99,19 @@ export default function Header({ mode = "student", onModeChange }: HeaderProps) 
           >
             {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
           </Button>
+
+          {user && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleLogout}
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">
+                {language === "fr" ? "Déconnexion" : "Hivoaka"}
+              </span>
+            </Button>
+          )}
         </div>
       </div>
     </header>

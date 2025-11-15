@@ -1,14 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
 import heroImage from "@assets/generated_images/Madagascar_coastal_highway_hero_9acb5798.png";
-import { GraduationCap, Shield } from "lucide-react";
+import { GraduationCap } from "lucide-react";
 
 interface HeroSectionProps {
   onStartLearning: () => void;
-  onAdminLogin: () => void;
 }
 
-export default function HeroSection({ onStartLearning, onAdminLogin }: HeroSectionProps) {
+export default function HeroSection({ onStartLearning }: HeroSectionProps) {
   const { t } = useLanguage();
 
   return (
@@ -40,16 +39,6 @@ export default function HeroSection({ onStartLearning, onAdminLogin }: HeroSecti
             >
               <GraduationCap className="mr-2 h-5 w-5" />
               {t("home.startLearning")}
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              onClick={onAdminLogin}
-              data-testid="button-admin-login"
-              className="border-white/30 bg-white/10 text-white backdrop-blur hover:bg-white/20"
-            >
-              <Shield className="mr-2 h-5 w-5" />
-              {t("home.adminLogin")}
             </Button>
           </div>
         </div>

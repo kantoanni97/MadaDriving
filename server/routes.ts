@@ -2,11 +2,69 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { db } from "../db";
-import { insertCategorySchema, questions, examResults, insertLessonSchema, insertQuestionSchema, insertExamResultSchema } from "@shared/schema";
+import { users, insertCategorySchema, questions, examResults, insertLessonSchema, insertQuestionSchema, insertExamResultSchema } from "@shared/schema";
 import { z } from "zod";
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
+import bcrypt from "bcryptjs";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+
+
+// Authentication Routes
+app.post("/api/auth/register", async (req, res) => {
+  try {
+    const { email, password, name, role } = req.body;
+    
+    // Vérifier si l'utilisateur existe déjà
+    const existingUser = await db.select().from(users).where(eq(users.email, email)).limit(1);
+    if (existingUser.length > 0) {
+      return res.status(400).json({ error: "Cet email est déjà utilisé" });
+    }
+    
+    // Hasher le mot de passe
+    const hashedPassword = await bcrypt.hash(password, 10);
+    
+    // Créer l'utilisateur
+    const [newUser] = await db.insert(users).values({
+      email,
+      password: hashedPassword,
+      name,
+      role: role || "student",
+    }).returning();
+    
+    // Ne pas renvoyer le mot de passe
+    const { password: _, ...userWithoutPassword } = newUser;
+    res.status(201).json(userWithoutPassword);
+  } catch (error) {
+    console.error("Error registering user:", error);
+    res.status(500).json({ error: "Erreur lors de l'inscription" });
+  }
+});
+
+app.post("/api/auth/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    
+    // Trouver l'utilisateur
+    const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+    if (!user) {
+      return res.status(401).json({ error: "Email ou mot de passe incorrect" });
+    }
+    
+    // Vérifier le mot de passe
+    const validPassword = await bcrypt.compare(password, user.password);
+    if (!validPassword) {
+      return res.status(401).json({ error: "Email ou mot de passe incorrect" });
+    }
+    
+    // Ne pas renvoyer le mot de passe
+    const { password: _, ...userWithoutPassword } = user;
+    res.json(userWithoutPassword);
+  } catch (error) {
+    console.error("Error logging in:", error);
+    res.status(500).json({ error: "Erreur lors de la connexion" });
+  }
+});
   // Categories
   app.get("/api/categories", async (req, res) => {
     try {
@@ -85,6 +143,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to delete category" });
     }
   });
+
 
   // Lessons
   app.get("/api/lessons/category/:categoryId", async (req, res) => {
