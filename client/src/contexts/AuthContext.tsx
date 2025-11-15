@@ -9,8 +9,8 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, name: string, role?: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<User>; 
+  register: (email: string, password: string, name: string, role?: string) => Promise<User>;
   logout: () => void;
   isLoading: boolean;
 }
@@ -45,6 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const userData = await response.json();
     setUser(userData);
     localStorage.setItem("user", JSON.stringify(userData));
+    return userData;
   };
 
   const register = async (email: string, password: string, name: string, role: string = "student") => {
@@ -62,6 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const userData = await response.json();
     setUser(userData);
     localStorage.setItem("user", JSON.stringify(userData));
+    return userData;
   };
 
   const logout = () => {

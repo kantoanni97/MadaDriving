@@ -9,62 +9,155 @@ import bcrypt from "bcryptjs";
 
 export async function registerRoutes(app: Express): Promise<Server> {
 
+  // Authentication Routes
+  app.post("/api/auth/register", async (req, res) => {
+    try {
+      const { email, password, name, role } = req.body;
+      
+      const existingUser = await db.select().from(users).where(eq(users.email, email)).limit(1);
+      if (existingUser.length > 0) {
+        return res.status(400).json({ error: "Cet email est déjà utilisé" });
+      }
+      
+      const hashedPassword = await bcrypt.hash(password, 10);
+      
+      const [newUser] = await db.insert(users).values({
+        email,
+        password: hashedPassword,
+        name,
+        role: role || "student",
+      }).returning();
+      
+      const { password: _, ...userWithoutPassword } = newUser;
+      res.status(201).json(userWithoutPassword);
+    } catch (error) {
+      console.error("Error registering user:", error);
+      res.status(500).json({ error: "Erreur lors de l'inscription" });
+    }
+  });
 
-// Authentication Routes
-app.post("/api/auth/register", async (req, res) => {
-  try {
-    const { email, password, name, role } = req.body;
-    
-    // Vérifier si l'utilisateur existe déjà
-    const existingUser = await db.select().from(users).where(eq(users.email, email)).limit(1);
-    if (existingUser.length > 0) {
-      return res.status(400).json({ error: "Cet email est déjà utilisé" });
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+      if (!user) {
+        return res.status(401).json({ error: "Email ou mot de passe incorrect" });
+      }
+      
+      const validPassword = await bcrypt.compare(password, user.password);
+      if (!validPassword) {
+        return res.status(401).json({ error: "Email ou mot de passe incorrect" });
+      }
+      
+      const { password: _, ...userWithoutPassword } = user;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("Error logging in:", error);
+      res.status(500).json({ error: "Erreur lors de la connexion" });
     }
-    
-    // Hasher le mot de passe
-    const hashedPassword = await bcrypt.hash(password, 10);
-    
-    // Créer l'utilisateur
-    const [newUser] = await db.insert(users).values({
-      email,
-      password: hashedPassword,
-      name,
-      role: role || "student",
-    }).returning();
-    
-    // Ne pas renvoyer le mot de passe
-    const { password: _, ...userWithoutPassword } = newUser;
-    res.status(201).json(userWithoutPassword);
-  } catch (error) {
-    console.error("Error registering user:", error);
-    res.status(500).json({ error: "Erreur lors de l'inscription" });
-  }
-});
+  });
 
-app.post("/api/auth/login", async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    
-    // Trouver l'utilisateur
-    const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
-    if (!user) {
-      return res.status(401).json({ error: "Email ou mot de passe incorrect" });
+  // User Management Routes
+  app.get("/api/users", async (req, res) => {
+    try {
+      const allUsers = await db.select().from(users).orderBy(users.createdAt);
+      const usersWithoutPasswords = allUsers.map(({ password, ...user }) => user);
+      res.json(usersWithoutPasswords);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ error: "Failed to fetch users" });
     }
-    
-    // Vérifier le mot de passe
-    const validPassword = await bcrypt.compare(password, user.password);
-    if (!validPassword) {
-      return res.status(401).json({ error: "Email ou mot de passe incorrect" });
+  });
+
+  app.get("/api/users/:userId/stats", async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const results = await db.select().from(examResults).where(eq(examResults.userId, userId));
+      
+      const totalExams = results.length;
+      const passedExams = results.filter(r => r.passed).length;
+      const averageScore = totalExams > 0 
+        ? Math.round(results.reduce((sum, r) => sum + (r.score / r.totalQuestions * 100), 0) / totalExams)
+        : 0;
+      
+      res.json({
+        totalExams,
+        passedExams,
+        averageScore,
+        recentResults: results.slice(0, 5),
+      });
+    } catch (error) {
+      console.error("Error fetching user stats:", error);
+      res.status(500).json({ error: "Failed to fetch user stats" });
     }
-    
-    // Ne pas renvoyer le mot de passe
-    const { password: _, ...userWithoutPassword } = user;
-    res.json(userWithoutPassword);
-  } catch (error) {
-    console.error("Error logging in:", error);
-    res.status(500).json({ error: "Erreur lors de la connexion" });
-  }
-});
+  });
+
+  // IMPORTANT: Route spécifique /password AVANT la route générique /:userId
+  app.patch("/api/users/:userId/password", async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const { currentPassword, newPassword } = req.body;
+      
+      const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+      
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      const validPassword = await bcrypt.compare(currentPassword, user.password);
+      if (!validPassword) {
+        return res.status(401).json({ error: "Mot de passe actuel incorrect" });
+      }
+      
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      
+      await db
+        .update(users)
+        .set({ password: hashedPassword })
+        .where(eq(users.id, userId));
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error changing password:", error);
+      res.status(500).json({ error: "Failed to change password" });
+    }
+  });
+
+  app.patch("/api/users/:userId", async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const { name } = req.body;
+      
+      const [updatedUser] = await db
+        .update(users)
+        .set({ name })
+        .where(eq(users.id, userId))
+        .returning();
+      
+      if (!updatedUser) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      const { password: _, ...userWithoutPassword } = updatedUser;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("Error updating user:", error);
+      res.status(500).json({ error: "Failed to update user" });
+    }
+  });
+
+  app.delete("/api/users/:userId", async (req, res) => {
+    try {
+      const { userId } = req.params;
+      await db.delete(users).where(eq(users.id, userId));
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      res.status(500).json({ error: "Failed to delete user" });
+    }
+  });
+
   // Categories
   app.get("/api/categories", async (req, res) => {
     try {
@@ -144,7 +237,6 @@ app.post("/api/auth/login", async (req, res) => {
     }
   });
 
-
   // Lessons
   app.get("/api/lessons/category/:categoryId", async (req, res) => {
     try {
@@ -213,29 +305,25 @@ app.post("/api/auth/login", async (req, res) => {
     }
   });
 
-    // Route pour obtenir des questions aléatoires de toutes les catégories
-app.get("/api/questions/random/:count", async (req, res) => {
-  try {
-    const count = parseInt(req.params.count, 10);
-    if (isNaN(count) || count <= 0) {
-      return res.status(400).json({ error: "Invalid count parameter" });
+  // Questions - route spécifique /random AVANT les routes génériques
+  app.get("/api/questions/random/:count", async (req, res) => {
+    try {
+      const count = parseInt(req.params.count, 10);
+      if (isNaN(count) || count <= 0) {
+        return res.status(400).json({ error: "Invalid count parameter" });
+      }
+      
+      const allQuestions = await db.select().from(questions);
+      const shuffled = allQuestions.sort(() => 0.5 - Math.random());
+      const randomQuestions = shuffled.slice(0, Math.min(count, allQuestions.length));
+      
+      res.json(randomQuestions);
+    } catch (error) {
+      console.error("Error fetching random questions:", error);
+      res.status(500).json({ error: "Failed to fetch random questions" });
     }
-    
-    // Récupérer toutes les questions et en sélectionner aléatoirement
-    const allQuestions = await db.select().from(questions);
-    
-    // Mélanger et prendre 'count' questions
-    const shuffled = allQuestions.sort(() => 0.5 - Math.random());
-    const randomQuestions = shuffled.slice(0, Math.min(count, allQuestions.length));
-    
-    res.json(randomQuestions);
-  } catch (error) {
-    console.error("Error fetching random questions:", error);
-    res.status(500).json({ error: "Failed to fetch random questions" });
-  }
-});
+  });
 
-  // Questions
   app.get("/api/questions/category/:categoryId", async (req, res) => {
     try {
       const questions = await storage.getQuestionsByCategory(req.params.categoryId);
@@ -303,8 +391,6 @@ app.get("/api/questions/random/:count", async (req, res) => {
     }
   });
 
-
-
   // Exam Results
   app.post("/api/exam-results", async (req, res) => {
     try {
@@ -320,6 +406,46 @@ app.get("/api/questions/random/:count", async (req, res) => {
     }
   });
 
+  app.get("/api/exam-results/stats", async (req, res) => {
+    try {
+      const allResults = await db.select().from(examResults);
+      
+      const totalExams = allResults.length;
+      const passedExams = allResults.filter(r => r.passed).length;
+      const averageScore = totalExams > 0 
+        ? Math.round(allResults.reduce((sum, r) => sum + (r.score / r.totalQuestions * 100), 0) / totalExams)
+        : 0;
+      
+      const examsBlancs = allResults.filter(r => r.categoryId === null);
+      const examsByCategory = allResults.filter(r => r.categoryId !== null);
+      
+      res.json({
+        totalExams,
+        passedExams,
+        averageScore,
+        examsBlancsCount: examsBlancs.length,
+        examsByCategoryCount: examsByCategory.length,
+      });
+    } catch (error) {
+      console.error("Error fetching stats:", error);
+      res.status(500).json({ error: "Failed to fetch stats" });
+    }
+  });
+
+  app.get("/api/exam-results/history", async (req, res) => {
+    try {
+      const results = await db
+        .select()
+        .from(examResults)
+        .orderBy(sql`${examResults.createdAt} DESC`);
+      
+      res.json(results);
+    } catch (error) {
+      console.error("Error fetching history:", error);
+      res.status(500).json({ error: "Failed to fetch history" });
+    }
+  });
+
   app.get("/api/exam-results/category/:categoryId", async (req, res) => {
     try {
       const results = await storage.getExamResultsByCategory(req.params.categoryId);
@@ -329,48 +455,6 @@ app.get("/api/questions/random/:count", async (req, res) => {
       res.status(500).json({ error: "Failed to fetch exam results" });
     }
   });
-
-  // Statistiques globales de l'utilisateur
-app.get("/api/exam-results/stats", async (req, res) => {
-  try {
-    const allResults = await db.select().from(examResults);
-    
-    const totalExams = allResults.length;
-    const passedExams = allResults.filter(r => r.passed).length;
-    const averageScore = totalExams > 0 
-      ? Math.round(allResults.reduce((sum, r) => sum + (r.score / r.totalQuestions * 100), 0) / totalExams)
-      : 0;
-    
-    const examsBlancs = allResults.filter(r => r.categoryId === null);
-    const examsByCategory = allResults.filter(r => r.categoryId !== null);
-    
-    res.json({
-      totalExams,
-      passedExams,
-      averageScore,
-      examsBlancsCount: examsBlancs.length,
-      examsByCategoryCount: examsByCategory.length,
-    });
-  } catch (error) {
-    console.error("Error fetching stats:", error);
-    res.status(500).json({ error: "Failed to fetch stats" });
-  }
-});
-
-// Historique complet des examens
-app.get("/api/exam-results/history", async (req, res) => {
-  try {
-    const results = await db
-      .select()
-      .from(examResults)
-      .orderBy(sql`${examResults.createdAt} DESC`);
-    
-    res.json(results);
-  } catch (error) {
-    console.error("Error fetching history:", error);
-    res.status(500).json({ error: "Failed to fetch history" });
-  }
-});
 
   const httpServer = createServer(app);
   return httpServer;

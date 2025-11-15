@@ -9,6 +9,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useSpeech } from "@/hooks/useSpeech";
 import { ArrowLeft, ArrowRight, CheckCircle2, XCircle, Check, X, Volume2, VolumeX } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Question {
   id: string;
@@ -32,6 +33,7 @@ const EXAM_QUESTION_COUNT = 40;
 export default function ExamBlanc() {
   const [, setLocation] = useLocation();
   const { language, t } = useLanguage();
+  const { user } = useAuth();
   const { speak, stop, speaking } = useSpeech();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
@@ -120,6 +122,7 @@ export default function ExamBlanc() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          userId: user?.id,
           categoryId: null, // NULL pour examen blanc
           score,
           totalQuestions: questions.length,

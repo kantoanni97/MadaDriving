@@ -1,4 +1,4 @@
-import { Moon, Sun, Globe, BarChart3, LogOut, User } from "lucide-react";
+import { Moon, Sun, Globe, BarChart3, LogOut, User, UserCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -66,6 +66,19 @@ export default function Header({ mode = "student", onModeChange }: HeaderProps) 
               <span className="hidden sm:inline">{user.name}</span>
             </div>
           )}
+
+{user && (
+  <Button
+    variant="outline"
+    size="sm"
+    onClick={() => setLocation("/profile")}
+  >
+    <UserCircle className="h-4 w-4 mr-2" />
+    <span className="hidden sm:inline">
+      {language === "fr" ? "Mon profil" : "Ny profila-ko"}
+    </span>
+  </Button>
+)}
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

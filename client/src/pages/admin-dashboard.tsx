@@ -138,7 +138,7 @@ export default function AdminDashboard() {
 
         {/* Actions rapides */}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
-          <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setLocation("/admin?tab=students")}>
+          <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setLocation("/students-management")}>
             <div className="text-center">
               <Users className="h-12 w-12 mx-auto mb-4 text-blue-600" />
               <h3 className="font-semibold mb-2">
@@ -150,7 +150,7 @@ export default function AdminDashboard() {
             </div>
           </Card>
 
-          <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setLocation("/admin?tab=categories")}>
+          <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setLocation("/admin")}>
             <div className="text-center">
               <FolderOpen className="h-12 w-12 mx-auto mb-4 text-purple-600" />
               <h3 className="font-semibold mb-2">
@@ -162,7 +162,7 @@ export default function AdminDashboard() {
             </div>
           </Card>
 
-          <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setLocation("/admin?tab=lessons")}>
+          <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setLocation("/admin")}>
             <div className="text-center">
               <BookOpen className="h-12 w-12 mx-auto mb-4 text-green-600" />
               <h3 className="font-semibold mb-2">
@@ -174,7 +174,7 @@ export default function AdminDashboard() {
             </div>
           </Card>
 
-          <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setLocation("/admin?tab=questions")}>
+          <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setLocation("/admin")}>
             <div className="text-center">
               <HelpCircle className="h-12 w-12 mx-auto mb-4 text-orange-600" />
               <h3 className="font-semibold mb-2">

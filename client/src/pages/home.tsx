@@ -7,6 +7,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
+import { useEffect } from "react"; // ← Ajoutez useEffect si pas déjà importé
 
 interface CategoryWithStats {
   id: string;
@@ -29,6 +31,14 @@ const iconMap: Record<string, any> = {
 export default function Home() {
   const { t, language } = useLanguage();
   const [, setLocation] = useLocation();
+  const { user } = useAuth(); // ← Ajoutez ceci
+
+  // Rediriger les admins vers leur dashboard
+  useEffect(() => {
+    if (user && user.role === "admin") {
+      setLocation("/admin-dashboard");
+    }
+  }, [user, setLocation]);
 
   const { data: categories, isLoading } = useQuery<CategoryWithStats[]>({
     queryKey: ["/api/categories"],

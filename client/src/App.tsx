@@ -17,11 +17,25 @@ import Auth from "@/pages/auth";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import StudentDashboard from "@/pages/student-dashboard";
 import AdminDashboard from "@/pages/admin-dashboard";
+import StudentsManagement from "@/pages/students-management";
+import Profile from "@/pages/profile";
 
 function Router() {
   return (
     <Switch>
       <Route path="/auth" component={Auth} />
+
+      <Route path="/profile">
+  <ProtectedRoute>
+    <Profile />
+  </ProtectedRoute>
+</Route>
+      
+      <Route path="/students-management">
+  <ProtectedRoute requireAdmin={true}>
+    <StudentsManagement />
+  </ProtectedRoute>
+</Route>
       
       <Route path="/">
         <ProtectedRoute>

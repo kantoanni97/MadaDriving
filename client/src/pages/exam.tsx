@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Question {
   id: string;
@@ -38,6 +39,7 @@ export default function Exam() {
   const [, params] = useRoute("/exam/:categoryId");
   const [, setLocation] = useLocation();
   const { t, language } = useLanguage();
+  const { user } = useAuth();
   const [examStarted, setExamStarted] = useState(false);
   const [userAnswers, setUserAnswers] = useState<number[]>([]);
   const [showResults, setShowResults] = useState(false);
@@ -50,6 +52,7 @@ export default function Exam() {
 
   const saveResultMutation = useMutation({
     mutationFn: async (data: {
+      userId?: string;
       categoryId: string;
       score: number;
       totalQuestions: number;
@@ -105,6 +108,7 @@ export default function Exam() {
     const passed = score >= 70;
 
     await saveResultMutation.mutateAsync({
+      userId: user?.id,
       categoryId,
       score,
       totalQuestions: examQuestions.length,

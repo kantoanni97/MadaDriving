@@ -19,15 +19,6 @@ export default function Auth() {
   const { language } = useLanguage();
   const { toast } = useToast();
 
-// Rediriger si déjà connecté (seulement au premier chargement)
-useEffect(() => {
-    if (user) {
-      const timer = setTimeout(() => {
-        setLocation(user.role === "admin" ? "/admin-dashboard" : "/");
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, []);
 
   // Formulaire de connexion
   const [loginEmail, setLoginEmail] = useState("");
@@ -46,12 +37,13 @@ useEffect(() => {
     setLoginLoading(true);
 
     try {
+      const user = await login(loginEmail, loginPassword);
       await login(loginEmail, loginPassword);
       toast({
         title: language === "fr" ? "Connexion réussie" : "Tafiditra soa aman-tsara",
         description: language === "fr" ? "Bienvenue !" : "Tonga soa!",
       });
-      setLocation("/");
+      setLocation(user.role === "admin" ? "/admin-dashboard" : "/");
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -68,12 +60,13 @@ useEffect(() => {
     setRegisterLoading(true);
 
     try {
+      const user = await register(registerEmail, registerPassword, registerName, registerRole);
       await register(registerEmail, registerPassword, registerName, registerRole);
       toast({
         title: language === "fr" ? "Inscription réussie" : "Fisoratana anarana nahomby",
         description: language === "fr" ? "Bienvenue !" : "Tonga soa!",
       });
-      setLocation("/");
+      setLocation(user.role === "admin" ? "/admin-dashboard" : "/");
     } catch (error: any) {
       toast({
         variant: "destructive",
