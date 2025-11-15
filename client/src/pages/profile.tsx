@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { ArrowLeft, User, Mail, Lock, Save } from "lucide-react";
+import { ArrowLeft, User, Mail, Lock, Save, Shield, Sparkles, Award } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 
@@ -30,7 +30,7 @@ export default function Profile() {
 
   const { data: stats } = useQuery<UserStats>({
     queryKey: [`/api/users/${user?.id}/stats`],
-    enabled: !!user?.id,
+    enabled: !!user?.id && user?.role === "student",
   });
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
@@ -46,10 +46,9 @@ export default function Profile() {
 
       if (!response.ok) throw new Error("Update failed");
 
-      // Mettre à jour le localStorage
       const updatedUser = { ...user, name };
       localStorage.setItem("user", JSON.stringify(updatedUser));
-      window.location.reload(); // Pour recharger les données
+      window.location.reload();
 
       toast({
         title: language === "fr" ? "Profil mis à jour" : "Profila navao",
@@ -123,167 +122,203 @@ export default function Profile() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto max-w-4xl px-4 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary-900/5">
+      <div className="container mx-auto max-w-5xl px-4 py-8">
+        {/* Header avec badge premium */}
         <div className="mb-8 flex items-center justify-between">
-          <h1 className="text-4xl font-bold">
-            {language === "fr" ? "Mon Profil" : "Ny Profila-ko"}
-          </h1>
-          <Button variant="outline" onClick={() => setLocation("/")}>
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-primary-600 to-primary-900 bg-clip-text text-transparent">
+                {language === "fr" ? "Mon Profil" : "Ny Profila-ko"}
+              </h1>
+              {user.role === "admin" && (
+                <div className="px-3 py-1 bg-gradient-to-r from-accent to-accent/80 rounded-full flex items-center gap-2">
+                  <Shield className="h-4 w-4 text-accent-foreground" />
+                  <span className="text-xs font-bold text-accent-foreground">ADMIN</span>
+                </div>
+              )}
+            </div>
+            <p className="text-muted-foreground">
+              {language === "fr" ? "Gérez vos informations personnelles" : "Tantano ny mombamomba anao"}
+            </p>
+          </div>
+          <Button variant="outline" onClick={() => setLocation("/")} className="border-primary-200 hover:border-primary-500">
             <ArrowLeft className="mr-2 h-4 w-4" />
             {language === "fr" ? "Retour" : "Miverina"}
           </Button>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
-          {/* Informations du profil */}
-          <Card className="p-6">
-            <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-              <User className="h-6 w-6" />
-              {language === "fr" ? "Informations" : "Fampahalalana"}
-            </h2>
-
-            <form onSubmit={handleUpdateProfile} className="space-y-4">
-              <div>
-                <Label htmlFor="name">
-                  {language === "fr" ? "Nom complet" : "Anarana feno"}
-                </Label>
-                <Input
-                  id="name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                />
+        <div className="grid gap-6 lg:grid-cols-3">
+          {/* Colonne gauche : Infos et Stats */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Informations du profil */}
+            <Card className="p-6 border-2 border-primary-500/20 hover:border-primary-500 transition-all duration-300 hover:shadow-xl">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-3 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl">
+                  <User className="h-6 w-6 text-white" />
+                </div>
+                <h2 className="text-2xl font-bold">
+                  {language === "fr" ? "Informations personnelles" : "Fampahalalana manokana"}
+                </h2>
               </div>
 
-              <div>
-                <Label htmlFor="email">
-                  {language === "fr" ? "Email" : "Mailaka"}
-                </Label>
-                <Input
-                  id="email"
-                  value={user.email}
-                  disabled
-                  className="bg-muted"
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  {language === "fr" ? "L'email ne peut pas être modifié" : "Tsy azo ovaina ny mailaka"}
-                </p>
-              </div>
-
-              <div>
-                <Label>
-                  {language === "fr" ? "Rôle" : "Andraikitra"}
-                </Label>
-                <Input
-                  value={user.role === "admin" ? "Admin" : (language === "fr" ? "Étudiant" : "Mpianatra")}
-                  disabled
-                  className="bg-muted"
-                />
-              </div>
-
-              <Button type="submit" disabled={isUpdating} className="w-full">
-                <Save className="mr-2 h-4 w-4" />
-                {language === "fr" ? "Enregistrer" : "Tahiry"}
-              </Button>
-            </form>
-          </Card>
-
-          {/* Statistiques (seulement pour les étudiants) */}
-          {user.role === "student" && stats && (
-            <Card className="p-6">
-              <h2 className="text-2xl font-bold mb-6">
-                {language === "fr" ? "Mes Statistiques" : "Ny Isa-ko"}
-              </h2>
-
-              <div className="space-y-4">
-                <div className="p-4 bg-blue-50 dark:bg-blue-950 rounded-lg">
-                  <p className="text-sm text-muted-foreground">
-                    {language === "fr" ? "Examens passés" : "Fanadinana vita"}
-                  </p>
-                  <p className="text-3xl font-bold text-blue-600">{stats.totalExams}</p>
+              <form onSubmit={handleUpdateProfile} className="space-y-4">
+                <div>
+                  <Label htmlFor="name" className="flex items-center gap-2 mb-2">
+                    <User className="w-4 h-4 text-primary-600" />
+                    {language === "fr" ? "Nom complet" : "Anarana feno"}
+                  </Label>
+                  <Input
+                    id="name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                    className="h-12 border-primary-200 focus:border-primary-500"
+                  />
                 </div>
 
-                <div className="p-4 bg-green-50 dark:bg-green-950 rounded-lg">
-                  <p className="text-sm text-muted-foreground">
-                    {language === "fr" ? "Examens réussis" : "Fanadinana nahomby"}
+                <div>
+                  <Label htmlFor="email" className="flex items-center gap-2 mb-2">
+                    <Mail className="w-4 h-4 text-primary-600" />
+                    {language === "fr" ? "Email" : "Mailaka"}
+                  </Label>
+                  <Input
+                    id="email"
+                    value={user.email}
+                    disabled
+                    className="h-12 bg-muted cursor-not-allowed"
+                  />
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {language === "fr" ? "L'email ne peut pas être modifié" : "Tsy azo ovaina ny mailaka"}
                   </p>
-                  <p className="text-3xl font-bold text-green-600">{stats.passedExams}</p>
                 </div>
 
-                <div className="p-4 bg-purple-50 dark:bg-purple-950 rounded-lg">
-                  <p className="text-sm text-muted-foreground">
-                    {language === "fr" ? "Score moyen" : "Isa antonony"}
-                  </p>
-                  <p className="text-3xl font-bold text-purple-600">{stats.averageScore}%</p>
-                </div>
-
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => setLocation("/dashboard")}
+                <Button 
+                  type="submit" 
+                  disabled={isUpdating} 
+                  className="w-full h-12 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700"
                 >
-                  {language === "fr" ? "Voir le tableau de bord complet" : "Hijery ny tondrozotra feno"}
+                  <Save className="mr-2 h-4 w-4" />
+                  {language === "fr" ? "Enregistrer les modifications" : "Tahiry ny fanovana"}
                 </Button>
-              </div>
+              </form>
             </Card>
+
+            {/* Changer le mot de passe */}
+            <Card className="p-6 border-2 border-primary-500/20 hover:border-primary-500 transition-all duration-300 hover:shadow-xl">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-3 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl">
+                  <Lock className="h-6 w-6 text-white" />
+                </div>
+                <h2 className="text-2xl font-bold">
+                  {language === "fr" ? "Sécurité" : "Fiarovana"}
+                </h2>
+              </div>
+
+              <form onSubmit={handleChangePassword} className="space-y-4">
+                <div>
+                  <Label htmlFor="current-password" className="flex items-center gap-2 mb-2">
+                    <Lock className="w-4 h-4 text-primary-600" />
+                    {language === "fr" ? "Mot de passe actuel" : "Teny miafina ankehitriny"}
+                  </Label>
+                  <Input
+                    id="current-password"
+                    type="password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    required
+                    className="h-12 border-primary-200 focus:border-primary-500"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="new-password" className="flex items-center gap-2 mb-2">
+                    <Sparkles className="w-4 h-4 text-primary-600" />
+                    {language === "fr" ? "Nouveau mot de passe" : "Teny miafina vaovao"}
+                  </Label>
+                  <Input
+                    id="new-password"
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    required
+                    minLength={6}
+                    className="h-12 border-primary-200 focus:border-primary-500"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="confirm-password" className="flex items-center gap-2 mb-2">
+                    <Lock className="w-4 h-4 text-primary-600" />
+                    {language === "fr" ? "Confirmer le mot de passe" : "Hamafiso ny teny miafina"}
+                  </Label>
+                  <Input
+                    id="confirm-password"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    minLength={6}
+                    className="h-12 border-primary-200 focus:border-primary-500"
+                  />
+                </div>
+
+                <Button 
+                  type="submit" 
+                  disabled={isUpdating}
+                  className="w-full h-12 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700"
+                >
+                  <Lock className="mr-2 h-4 w-4" />
+                  {language === "fr" ? "Changer le mot de passe" : "Manova ny teny miafina"}
+                </Button>
+              </form>
+            </Card>
+          </div>
+
+          {/* Colonne droite : Statistiques */}
+          {user.role === "student" && stats && (
+            <div className="space-y-6">
+              <Card className="p-6 border-2 border-primary-500/20 hover:border-primary-500 transition-all duration-300 hover:shadow-xl">
+                <div className="flex items-center gap-3 mb-6">
+                  <Award className="h-6 w-6 text-accent" />
+                  <h2 className="text-xl font-bold">
+                    {language === "fr" ? "Mes performances" : "Ny zava-bitako"}
+                  </h2>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/20 rounded-xl">
+                    <p className="text-sm text-muted-foreground mb-1">
+                      {language === "fr" ? "Examens passés" : "Fanadinana vita"}
+                    </p>
+                    <p className="text-4xl font-bold text-blue-600">{stats.totalExams}</p>
+                  </div>
+
+                  <div className="p-4 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/30 dark:to-green-900/20 rounded-xl">
+                    <p className="text-sm text-muted-foreground mb-1">
+                      {language === "fr" ? "Examens réussis" : "Fanadinana nahomby"}
+                    </p>
+                    <p className="text-4xl font-bold text-green-600">{stats.passedExams}</p>
+                  </div>
+
+                  <div className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/30 dark:to-purple-900/20 rounded-xl">
+                    <p className="text-sm text-muted-foreground mb-1">
+                      {language === "fr" ? "Score moyen" : "Isa antonony"}
+                    </p>
+                    <p className="text-4xl font-bold text-purple-600">{stats.averageScore}%</p>
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    className="w-full mt-4"
+                    onClick={() => setLocation("/dashboard")}
+                  >
+                    {language === "fr" ? "Voir les détails →" : "Hijery ny antsipiriany →"}
+                  </Button>
+                </div>
+              </Card>
+            </div>
           )}
-
-          {/* Changer le mot de passe */}
-          <Card className="p-6 md:col-span-2">
-            <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-              <Lock className="h-6 w-6" />
-              {language === "fr" ? "Changer le mot de passe" : "Manova ny teny miafina"}
-            </h2>
-
-            <form onSubmit={handleChangePassword} className="space-y-4 max-w-md">
-              <div>
-                <Label htmlFor="current-password">
-                  {language === "fr" ? "Mot de passe actuel" : "Teny miafina ankehitriny"}
-                </Label>
-                <Input
-                  id="current-password"
-                  type="password"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="new-password">
-                  {language === "fr" ? "Nouveau mot de passe" : "Teny miafina vaovao"}
-                </Label>
-                <Input
-                  id="new-password"
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  required
-                  minLength={6}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="confirm-password">
-                  {language === "fr" ? "Confirmer le mot de passe" : "Hamafiso ny teny miafina"}
-                </Label>
-                <Input
-                  id="confirm-password"
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                  minLength={6}
-                />
-              </div>
-
-              <Button type="submit" disabled={isUpdating}>
-                <Lock className="mr-2 h-4 w-4" />
-                {language === "fr" ? "Changer le mot de passe" : "Manova ny teny miafina"}
-              </Button>
-            </form>
-          </Card>
         </div>
       </div>
     </div>

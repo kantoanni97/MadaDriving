@@ -86,6 +86,8 @@ export default function CategoryLessons() {
       hasPrevious={currentLessonIndex > 0}
       //hasNext={currentLessonIndex < lessons.length - 1}
       hasNext={true}
+      currentIndex={currentLessonIndex}  
+      totalLessons={lessons.length}      
     />
   );
 }

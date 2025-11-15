@@ -30,6 +30,16 @@ export default {
           DEFAULT: "hsl(var(--primary) / <alpha-value>)",
           foreground: "hsl(var(--primary-foreground) / <alpha-value>)",
           border: "var(--primary-border)",
+          50: "#F0FDFA",
+          100: "#CCFBF1",
+          200: "#99F6E4",
+          300: "#5EEAD4",
+          400: "#2DD4BF",
+          500: "#14B8A6",
+          600: "#0D9488",
+          700: "#0F766E",
+          800: "#115E59",
+          900: "#134E4A",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary) / <alpha-value>)",
@@ -81,11 +91,28 @@ export default {
           busy: "rgb(239 68 68)",
           offline: "rgb(156 163 175)",
         },
+        // Nouvelles couleurs premium
+        teal: {
+          50: "#F0FDFA",
+          500: "#14B8A6",
+          600: "#0D9488",
+          900: "#134E4A",
+        },
+        gold: {
+          DEFAULT: "#FCD34D",
+          400: "#FCD34D",
+          500: "#F59E0B",
+        },
       },
       fontFamily: {
         sans: ["var(--font-sans)"],
         serif: ["var(--font-serif)"],
         mono: ["var(--font-mono)"],
+      },
+      backgroundImage: {
+        'gradient-premium': 'linear-gradient(135deg, #14B8A6 0%, #0D9488 50%, #134E4A 100%)',
+        'gradient-gold': 'linear-gradient(135deg, #FCD34D 0%, #F59E0B 100%)',
+        'gradient-dark': 'linear-gradient(180deg, #1E293B 0%, #0F172A 100%)',
       },
       keyframes: {
         "accordion-down": {
@@ -96,10 +123,20 @@ export default {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
+        "fade-in": {
+          from: { opacity: "0", transform: "translateY(10px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
+        "slide-up": {
+          from: { transform: "translateY(100%)" },
+          to: { transform: "translateY(0)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "fade-in": "fade-in 0.5s ease-out",
+        "slide-up": "slide-up 0.5s ease-out",
       },
     },
   },
